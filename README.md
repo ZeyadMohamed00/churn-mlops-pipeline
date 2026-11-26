@@ -5,8 +5,10 @@ End-to-end churn pipeline on the public IBM Telco Customer Churn dataset (7,043 
 **Live demo (free tier):** https://churn-web-ochre.vercel.app  (Predict, Model & metrics, Drift monitoring tabs)
 API docs: https://churn-api-iota.vercel.app/docs
 
-![prediction](docs/screenshot-predict.png)
-![drift monitoring](docs/screenshot-drift.png)
+![prediction with what-if analysis](docs/screenshot-predict.png)
+![model comparison](docs/screenshot-models.png)
+
+Pages: Predict (what-if analysis, each variant is a real API call), Batch scoring (CSV paste), Model comparison, Drift monitoring, Retraining, Pipeline.
 
 ## Pipeline
 ```
