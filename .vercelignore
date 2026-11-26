@@ -1,0 +1,11 @@
+frontend
+tests
+ci
+eval
+data
+reports
+eda
+mlflow.db
+mlruns
+.git
+*.joblib

@@ -1,0 +1,44 @@
+{
+ "version": "20261126-034610-2a2ff4",
+ "served_model": "logistic_regression",
+ "data_tag": "initial",
+ "train_rows": 5634,
+ "test_rows": 1409,
+ "threshold": 0.5,
+ "candidates": {
+  "logistic_regression": {
+   "precision": 0.6583,
+   "recall": 0.5615,
+   "f1": 0.6061,
+   "roc_auc": 0.842,
+   "fit_seconds": 0.05,
+   "sklearn_latency": {
+    "p50_ms": 2.99,
+    "p95_ms": 3.155
+   }
+  },
+  "random_forest": {
+   "precision": 0.6475,
+   "recall": 0.5107,
+   "f1": 0.571,
+   "roc_auc": 0.8414,
+   "fit_seconds": 0.99,
+   "sklearn_latency": {
+    "p50_ms": 9.35,
+    "p95_ms": 9.678
+   }
+  },
+  "gradient_boosting": {
+   "precision": 0.6655,
+   "recall": 0.516,
+   "f1": 0.5813,
+   "roc_auc": 0.8433,
+   "fit_seconds": 0.74,
+   "sklearn_latency": {
+    "p50_ms": 3.001,
+    "p95_ms": 3.532
+   }
+  }
+ },
+ "churn_rate_train": 0.2654
+}

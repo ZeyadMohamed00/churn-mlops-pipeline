@@ -1,4 +1,10 @@
 __pycache__/
-.venv/
+*.pyc
+frontend/node_modules
+frontend/dist
+.vercel
+.env*
 .pytest_cache/
-models/
+mlflow.db
+mlruns/
+frontend/public/*.html

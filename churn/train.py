@@ -1,59 +1,87 @@
-"""Train, compare, evaluate and register a model.
-python -m churn.train   ->  models/<version>/{model.joblib, metadata.json} and models/latest.txt"""
-import json, hashlib, sys, time
-from pathlib import Path
-import joblib, numpy as np
+"""Train + compare models with MLflow tracking; export the served model (numpy-only inference) and metrics.
+Run: python -m churn.train"""
+import json, os, time, hashlib
+import numpy as np
+import pandas as pd
+import joblib
+import mlflow
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from .data import make_data, FEATURES, NUMERIC, CATEGORICAL, TARGET
+from .data import load, split, NUM, CAT, FEATURES, ROOT
 
-MODELS_DIR = Path("models")
-MIN_AUC = 0.70  # quality gate: a model below this is NOT registered
-
-
-def build(estimator) -> Pipeline:
-    pre = ColumnTransformer([("num", StandardScaler(), NUMERIC),
-                             ("cat", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL)])
-    return Pipeline([("pre", pre), ("clf", estimator)])
+MODELS = os.path.join(ROOT, "models")
 
 
-def train(df=None, models_dir: Path = MODELS_DIR, seed: int = 0, min_auc: float = MIN_AUC) -> dict:
-    df = make_data(seed=seed) if df is None else df
-    X, y = df[FEATURES], df[TARGET]
-    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, stratify=y, random_state=seed)
-    candidates = {
-        "logreg": build(LogisticRegression(max_iter=1000)),
-        "gboost": build(GradientBoostingClassifier(random_state=seed)),
-    }
-    cv = {n: float(np.mean(cross_val_score(m, X_tr, y_tr, cv=5, scoring="roc_auc"))) for n, m in candidates.items()}
-    best = max(cv, key=cv.get)  # choose on CV of the TRAIN split only; test set stays untouched
-    model = candidates[best].fit(X_tr, y_tr)
-    proba = model.predict_proba(X_te)[:, 1]
-    pred = (proba >= 0.5).astype(int)
-    metrics = {"roc_auc": float(roc_auc_score(y_te, proba)), "precision": float(precision_score(y_te, pred)),
-               "recall": float(recall_score(y_te, pred)), "f1": float(f1_score(y_te, pred))}
-    meta = {"model": best, "cv_auc": cv, "test_metrics": metrics, "n_train": len(X_tr), "n_test": len(X_te),
-            "features": FEATURES, "data": "synthetic", "seed": seed,
-            "reference_stats": {c: {"mean": float(X_tr[c].mean()), "std": float(X_tr[c].std())} for c in NUMERIC},
-            "reference_hist": {c: np.histogram(X_tr[c], bins=10)[0].tolist() for c in NUMERIC},
-            "reference_edges": {c: np.histogram(X_tr[c], bins=10)[1].tolist() for c in NUMERIC}}
-    if metrics["roc_auc"] < min_auc:
-        raise RuntimeError(f"quality gate failed: AUC {metrics['roc_auc']:.3f} < {min_auc}")
-    version = time.strftime("%Y%m%d-%H%M%S") + "-" + hashlib.sha1(json.dumps(metrics).encode()).hexdigest()[:6]
-    out = models_dir / version
-    out.mkdir(parents=True)
-    joblib.dump(model, out / "model.joblib")
-    meta["version"] = version
-    (out / "metadata.json").write_text(json.dumps(meta, indent=2))
-    (models_dir / "latest.txt").write_text(version)
-    return meta
+def make_pipeline(clf):
+    pre = ColumnTransformer([("num", StandardScaler(), NUM), ("cat", OneHotEncoder(handle_unknown="ignore", drop="if_binary"), CAT)])
+    return Pipeline([("pre", pre), ("clf", clf)])
+
+
+CANDIDATES = {
+    "logistic_regression": lambda: LogisticRegression(max_iter=1000, C=1.0),
+    "random_forest": lambda: RandomForestClassifier(n_estimators=300, min_samples_leaf=5, random_state=42, n_jobs=-1),
+    "gradient_boosting": lambda: GradientBoostingClassifier(random_state=42),
+}
+
+
+def metrics(pipe, X, y, threshold=0.5):
+    p = pipe.predict_proba(X)[:, 1]
+    yhat = (p >= threshold).astype(int)
+    return {"precision": precision_score(y, yhat), "recall": recall_score(y, yhat), "f1": f1_score(y, yhat), "roc_auc": roc_auc_score(y, p)}
+
+
+def latency_ms(fn, n=500):
+    ts = []
+    for _ in range(n):
+        t = time.perf_counter(); fn(); ts.append((time.perf_counter() - t) * 1000)
+    return {"p50_ms": round(float(np.percentile(ts, 50)), 3), "p95_ms": round(float(np.percentile(ts, 95)), 3)}
+
+
+def export_numpy(pipe: Pipeline, path: str):
+    """Export a fitted logistic-regression pipeline as plain JSON so serving needs only numpy."""
+    pre, clf = pipe.named_steps["pre"], pipe.named_steps["clf"]
+    sc = pre.named_transformers_["num"]; oh = pre.named_transformers_["cat"]
+    cats = {}
+    for name, cs, drop in zip(CAT, oh.categories_, oh.drop_idx_):
+        cats[name] = {"values": [str(c) for c in cs], "drop_idx": None if drop is None else int(drop)}
+    json.dump({"num": NUM, "mean": sc.mean_.tolist(), "scale": sc.scale_.tolist(), "cat": CAT, "categories": cats,
+               "coef": clf.coef_[0].tolist(), "intercept": float(clf.intercept_[0])}, open(path, "w"))
+
+
+def main(train_df=None, test_df=None, tag="initial"):
+    df = load()
+    tr, te = (train_df, test_df) if train_df is not None else split(df)
+    mlflow.set_tracking_uri("sqlite:///" + os.path.join(ROOT, "mlflow.db"))
+    mlflow.set_experiment("churn")
+    results, fitted = {}, {}
+    for name, mk in CANDIDATES.items():
+        with mlflow.start_run(run_name=f"{tag}-{name}"):
+            pipe = make_pipeline(mk()); t0 = time.time()
+            pipe.fit(tr[FEATURES], tr["y"]); fit_s = time.time() - t0
+            m = metrics(pipe, te[FEATURES], te["y"])
+            mlflow.log_params({"model": name, "train_rows": len(tr), "test_rows": len(te), "data_tag": tag, **{f"p_{k}": v for k, v in pipe.named_steps["clf"].get_params().items() if isinstance(v, (int, float, str))}})
+            mlflow.log_metrics({**m, "fit_seconds": fit_s})
+            row = te[FEATURES].iloc[[0]]
+            lat = latency_ms(lambda: pipe.predict_proba(row))
+            mlflow.log_metrics({"sklearn_single_predict_p50_ms": lat["p50_ms"], "sklearn_single_predict_p95_ms": lat["p95_ms"]})
+            results[name] = {**{k: round(v, 4) for k, v in m.items()}, "fit_seconds": round(fit_s, 2), "sklearn_latency": lat}
+            fitted[name] = pipe
+    # The served model is logistic regression: competitive here, interpretable, and exportable to numpy-only inference.
+    version = time.strftime("%Y%m%d-%H%M%S") + "-" + hashlib.md5(str(results).encode()).hexdigest()[:6]
+    vdir = os.path.join(MODELS, version); os.makedirs(vdir)
+    joblib.dump(fitted["logistic_regression"], os.path.join(vdir, "model.joblib"))
+    export_numpy(fitted["logistic_regression"], os.path.join(vdir, "model.json"))
+    meta = {"version": version, "served_model": "logistic_regression", "data_tag": tag, "train_rows": len(tr), "test_rows": len(te),
+            "threshold": 0.5, "candidates": results, "churn_rate_train": round(float(tr["y"].mean()), 4)}
+    json.dump(meta, open(os.path.join(vdir, "metadata.json"), "w"), indent=1)
+    open(os.path.join(MODELS, "latest.txt"), "w").write(version)
+    return meta, fitted
 
 
 if __name__ == "__main__":
-    m = train()
-    print(json.dumps({k: m[k] for k in ("version", "model", "cv_auc", "test_metrics")}, indent=2))
+    meta, _ = main()
+    print(json.dumps(meta, indent=1))

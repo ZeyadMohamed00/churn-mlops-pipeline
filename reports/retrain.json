@@ -1,0 +1,29 @@
+{
+ "drift": {
+  "share_drifted": 0.211,
+  "drifted_columns": 4,
+  "n_columns": 19
+ },
+ "threshold_share": 0.2,
+ "retrained": true,
+ "old_model_on_B": {
+  "precision": 0.6689,
+  "recall": 0.541,
+  "f1": 0.5982,
+  "roc_auc": 0.8469
+ },
+ "promoted": false,
+ "new_model_version": "20261126-034629-79150c",
+ "previous_model_version": "20261126-034610-2a2ff4",
+ "new_model_on_B": {
+  "precision": 0.6875,
+  "recall": 0.541,
+  "f1": 0.6055,
+  "roc_auc": 0.8473,
+  "fit_seconds": 0.07,
+  "sklearn_latency": {
+   "p50_ms": 3.05,
+   "p95_ms": 3.217
+  }
+ }
+}

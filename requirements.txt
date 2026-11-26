@@ -1,8 +1,5 @@
+# serving only (numpy-only inference, deployable on a small serverless function)
 fastapi>=0.110
 uvicorn>=0.29
-scikit-learn>=1.3
-pandas
-numpy
-joblib
-httpx>=0.27
+numpy>=1.26
 pytest>=8

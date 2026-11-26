@@ -1,0 +1,16 @@
+{
+ "threshold_share": 0.2,
+ "holdout_vs_train": {
+  "share_drifted": 0.0,
+  "drifted_columns": 0,
+  "n_columns": 19,
+  "retrain_triggered": false
+ },
+ "simulated_shift_vs_train": {
+  "share_drifted": 0.211,
+  "drifted_columns": 4,
+  "n_columns": 19,
+  "retrain_triggered": true,
+  "note": "SIMULATED: prices +30%, shorter tenure, more month-to-month. Not real production data."
+ }
+}
