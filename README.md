@@ -28,7 +28,7 @@ data/telco_churn.csv -> eda.py (eda/eda_report.md, eda.png)
 - The three models are within about 0.002 ROC-AUC of each other. That difference is not meaningful with one split and no confidence intervals. I serve logistic regression because it is as good here, interpretable, and exports to plain numpy.
 - Recall of 0.56 means about 44% of churners are missed at threshold 0.5. A lower threshold would trade precision for recall; I did not tune it.
 - Drift (Evidently): holdout vs training 0/19 columns drifted. **Simulated** shift (prices +30%, shorter tenure, more month-to-month contracts) 4/19 (21.1%) drifted, which crosses my 20% retrain threshold (my own choice; Evidently's default share is 0.5).
-- Retrain demo (`reports/retrain.json`): on simulated drift the retrained logistic regression scores ROC-AUC 0.847 vs 0.847 for the old one on a later shifted batch, so no real improvement. **The simulated rows reuse the original labels, so this demonstrates the retraining mechanism, not a real-world gain.**
+- Retrain demo (`reports/retrain.json`): on simulated drift the retrained logistic regression scores ROC-AUC 0.8473 vs 0.8469 for the old one (F1 0.606 vs 0.598) on a later shifted batch, a negligible difference. **The simulated rows reuse the original labels, so this demonstrates the retraining mechanism, not a real-world gain.**
 
 ## Honest status
 - Dataset is public (IBM sample, Apache-2.0), not private data. All drift beyond the clean holdout check is **simulated**; there is no real production traffic.
