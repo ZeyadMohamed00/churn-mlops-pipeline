@@ -76,3 +76,7 @@ docker compose up --build                       # unverified
 
 ## Accounts and saved predictions
 `POST /auth/register`, `POST /auth/login`, `GET /auth/me` (PBKDF2-SHA256 + JWT). Predictions made while logged in are saved to the `churn_predictions` table (PostgreSQL via `DATABASE_URL`, SQLite fallback for local runs) and listed in the UI under "My saved predictions" (`GET /history`, `DELETE /history`). Guests can still predict; nothing is stored for them. Tests: `tests/test_accounts.py`, `frontend/src/auth.test.tsx`. Not built: email verification, password reset, rate limiting.
+
+## Database migrations
+
+Schema changes are versioned with Alembic (`migrations/`, baseline `0001`). Point `DATABASE_URL` at the database and run `alembic upgrade head`. The baseline was generated from the models and checked by running upgrade, downgrade and upgrade again on SQLite; I did not run it against a fresh PostgreSQL instance here. The running app still creates missing tables on start.

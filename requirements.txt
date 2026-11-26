@@ -6,3 +6,4 @@ pytest>=8
 sqlalchemy>=2.0
 psycopg2-binary>=2.9
 PyJWT>=2.8
+alembic>=1.13
