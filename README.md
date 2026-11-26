@@ -1,5 +1,7 @@
 # Customer Churn: MLOps pipeline
 
+[![CI](https://github.com/ZeyadMohamed00/churn-mlops-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/ZeyadMohamed00/churn-mlops-pipeline/actions/workflows/ci.yml)
+
 End-to-end churn pipeline on the public IBM Telco Customer Churn dataset (7,043 customers): EDA, experiment tracking with MLflow, model comparison, versioned model artifacts, a FastAPI prediction service, Evidently drift monitoring, and drift-triggered retraining.
 
 **Live demo (free tier):** https://churn-web-ochre.vercel.app  (Predict, Model & metrics, Drift monitoring tabs)
@@ -52,7 +54,7 @@ data/telco_churn.csv -> eda.py (eda/eda_report.md, eda.png)
 - The live API serves logistic regression via exported numpy weights, because scikit-learn/pandas/MLflow/Evidently do not fit a free serverless function. A test checks the numpy model equals the sklearn pipeline on every test row (max difference below 1e-9).
 - MLflow runs are recorded locally in `mlflow.db` (SQLite, not committed). There is no hosted MLflow server. There is no model registry beyond versioned folders.
 - Evidently reports are static HTML generated offline and shipped with the frontend.
-- Docker and GitHub Actions files are written but not verified (no Docker here; the push token had no workflow scope, so CI lives in `.github/workflows/`).
+- GitHub Actions CI runs the tests on every push (`.github/workflows/ci.yml`, passing). Docker files are written but not verified (no Docker here).
 - Counts: 9 backend tests (real data, no mocks) and 2 frontend tests pass.
 
 ## Run
