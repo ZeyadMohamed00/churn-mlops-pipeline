@@ -33,6 +33,8 @@ def _secret() -> str:
 
 
 _url = os.getenv("DATABASE_URL", "sqlite:///./churn_accounts.db")
+if _url.startswith(("postgres://", "postgresql://")):
+    _url = "postgresql+psycopg2://" + _url.split("://", 1)[1]
 engine = create_engine(_url, pool_pre_ping=True, connect_args={"check_same_thread": False} if _url.startswith("sqlite") else {})
 Session = sessionmaker(engine, expire_on_commit=False)
 
