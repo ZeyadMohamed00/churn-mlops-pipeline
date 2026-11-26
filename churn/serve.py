@@ -1,9 +1,11 @@
 """FastAPI service. Inference is numpy-only (model.json exported at training time), so the image/function stays small."""
 import json, os, time
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+from . import accounts
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODELS = os.path.join(ROOT, "models")
@@ -48,10 +50,13 @@ class Customer(BaseModel):
 
 
 def create_app():
+    accounts.init()
     d = current_dir()
     model = NumpyModel(os.path.join(d, "model.json"))
     meta = json.load(open(os.path.join(d, "metadata.json")))
     app = FastAPI(title="Churn prediction API", version="2.0.0")
+    app.include_router(accounts.router)
+    app.include_router(accounts.history_router)
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     stats = {"requests": 0, "latencies_ms": []}
 
@@ -69,11 +74,13 @@ def create_app():
         return json.load(open(p)) if os.path.exists(p) else {}
 
     @app.post("/predict")
-    def predict(c: Customer):
+    def predict(c: Customer, authorization: str = Header(default=""), x_client_id: str = Header(default="anonymous-client")):
+        owner = accounts.identity(authorization, x_client_id)
         t = time.perf_counter()
         p = model.predict_proba(c.model_dump())
         ms = (time.perf_counter() - t) * 1000
         stats["requests"] += 1; stats["latencies_ms"] = (stats["latencies_ms"] + [ms])[-1000:]
+        accounts.save_prediction(owner, c.model_dump(), round(p, 4), bool(p >= meta["threshold"]), meta["version"])
         return {"churn_probability": round(p, 4), "will_churn": bool(p >= meta["threshold"]), "threshold": meta["threshold"],
                 "model_version": meta["version"], "inference_ms": round(ms, 3)}
 

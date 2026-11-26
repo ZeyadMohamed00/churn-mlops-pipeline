@@ -71,3 +71,6 @@ docker compose up --build                       # unverified
 3. **Train/serve parity**: the served numpy model is tested against the trained sklearn pipeline on the whole test set.
 4. **Drift monitoring**: Evidently compares new data to the training reference per column; a share of drifted columns above a threshold triggers retraining. Drift is about inputs, not proof the model got worse.
 5. **Retraining is a candidate, not an auto-deploy**: the new model is saved but only served after explicit promotion. The numbers here show how little a retrain helps on simulated drift, and I say so.
+
+## Accounts and saved predictions
+`POST /auth/register`, `POST /auth/login`, `GET /auth/me` (PBKDF2-SHA256 + JWT). Predictions made while logged in are saved to the `churn_predictions` table (PostgreSQL via `DATABASE_URL`, SQLite fallback for local runs) and listed in the UI under "My saved predictions" (`GET /history`, `DELETE /history`). Guests can still predict; nothing is stored for them. Tests: `tests/test_accounts.py`, `frontend/src/auth.test.tsx`. Not built: email verification, password reset, rate limiting.

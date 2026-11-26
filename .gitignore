@@ -8,3 +8,4 @@ frontend/dist
 mlflow.db
 mlruns/
 frontend/public/*.html
+churn_accounts.db

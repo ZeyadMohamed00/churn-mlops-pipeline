@@ -3,3 +3,6 @@ fastapi>=0.110
 uvicorn>=0.29
 numpy>=1.26
 pytest>=8
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+PyJWT>=2.8
