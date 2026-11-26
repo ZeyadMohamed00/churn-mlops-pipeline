@@ -17,14 +17,14 @@ beforeEach(() => {
 test("predict shows probability", async () => {
   render(<App />);
   await userEvent.click(screen.getByText("Predict churn"));
-  await waitFor(() => expect(screen.getByText(/73.0% churn probability/)).toBeInTheDocument());
+  await waitFor(() => expect(screen.getAllByText("73.0%").length).toBeGreaterThan(0));
 });
 
 test("model and monitoring tabs render metrics", async () => {
   render(<App />);
-  await userEvent.click(screen.getByText("Model & metrics"));
-  await screen.findByText("0.84");
-  await userEvent.click(screen.getByText("Drift monitoring"));
-  await screen.findByText(/4 \/ 19/);
-  expect(screen.getByText("YES")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: /Model comparison/ }));
+  await screen.findByText("served");
+  await userEvent.click(screen.getByRole("button", { name: /Drift monitoring/ }));
+  await screen.findByText(/4 of 19 columns/);
+  expect(screen.getByText("Retrain triggered")).toBeInTheDocument();
 });

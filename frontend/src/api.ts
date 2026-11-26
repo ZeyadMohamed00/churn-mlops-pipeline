@@ -18,3 +18,5 @@ export async function getJson<T>(name: string): Promise<T> {
   if (!res.ok) throw new Error(`Could not load ${name}`);
   return res.json();
 }
+
+export const FIELDS_DEFAULT: Customer = { tenure: 12, MonthlyCharges: 70, TotalCharges: 840, SeniorCitizen: 0, InternetService: "Fiber optic", Contract: "Month-to-month", PaymentMethod: "Electronic check", PaperlessBilling: "Yes", TechSupport: "No" };
