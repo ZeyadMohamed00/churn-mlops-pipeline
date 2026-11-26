@@ -10,6 +10,21 @@ API docs: https://churn-api-iota.vercel.app/docs
 
 Pages: Predict (what-if analysis, each variant is a real API call), Batch scoring (CSV paste), Model comparison, Drift monitoring, Retraining, Pipeline.
 
+## System overview
+```mermaid
+flowchart LR
+  DS[(IBM Telco churn dataset)] --> EDA[EDA]
+  DS --> TR[Train and compare models, tracked in MLflow]
+  TR --> QG{Quality gate}
+  QG -->|pass| REG[Versioned model artifact]
+  REG --> API[FastAPI prediction service]
+  API --> UI[React dashboard]
+  API --> DR[Evidently drift report]
+  DR -->|drift detected| TR
+```
+
+**Tech stack:** scikit-learn, MLflow, Evidently, FastAPI, React, TypeScript, Pytest, Docker.
+
 ## Pipeline
 ```
 data/telco_churn.csv -> eda.py (eda/eda_report.md, eda.png)
