@@ -4,7 +4,7 @@
 
 End-to-end churn pipeline on the public IBM Telco Customer Churn dataset (7,043 customers): EDA, experiment tracking with MLflow, model comparison, versioned model artifacts, a FastAPI prediction service, Evidently drift monitoring, and drift-triggered retraining.
 
-**Live demo (free tier):** https://churn-web-ochre.vercel.app  (Predict, Model & metrics, Drift monitoring tabs)
+**Live app (free tier):** https://churn-web-ochre.vercel.app  (Predict, Model & metrics, Drift monitoring tabs)
 API docs: https://churn-api-iota.vercel.app/docs
 
 ![prediction with what-if analysis](docs/screenshot-predict.png)

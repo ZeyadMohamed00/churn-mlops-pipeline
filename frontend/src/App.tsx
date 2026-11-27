@@ -19,7 +19,7 @@ const risk = (p: number) => (p >= 0.5 ? { label: "High risk", kind: "bad" as con
 function Main() {
   const [page, setPage] = useState<Page>("predict");
   return (
-    <Shell brand="Churn Lab" tagline="End-to-end MLOps demo" page={page} onNav={(p) => setPage(p as Page)}
+    <Shell brand="Churn Lab" tagline="End-to-end MLOps pipeline" page={page} onNav={(p) => setPage(p as Page)}
       nav={[{ id: "predict", label: "Predict", icon: "◎" }, { id: "batch", label: "Batch scoring", icon: "▤" }, { id: "model", label: "Model comparison", icon: "▦" }, { id: "drift", label: "Drift monitoring", icon: "≈" }, { id: "retrain", label: "Retraining", icon: "↻" }, { id: "pipeline", label: "Pipeline", icon: "⇢" }]}>
       {page === "predict" && <PredictPage />}
       {page === "batch" && <BatchPage />}
@@ -151,7 +151,7 @@ function RetrainPage() {
     <div className="page-h"><div><h1>Retraining</h1><p>When drift crosses the threshold, the pipeline trains a candidate on the new data and promotes it only if it beats the current model.</p></div></div>
     <div className="grid g3"><Stat label="Drift share" value={`${(r.drift.share_drifted * 100).toFixed(1)}%`} hint={`threshold ${(r.threshold_share * 100).toFixed(0)}%`} /><Stat label="Retrained" value={r.retrained ? "Yes" : "No"} /><Stat label="Promoted" value={r.promoted ? "Yes" : "No"} hint="Candidate did not clear the gate" /></div>
     <div className="card tw"><h3>Old vs new model on the shifted data</h3><table className="t"><thead><tr><th>Metric</th><th>Current ({r.previous_model_version.slice(-6)})</th><th>Candidate ({r.new_model_version.slice(-6)})</th></tr></thead><tbody>{keys.map((k) => <tr key={k}><td>{k}</td><td>{r.old_model_on_B[k]}</td><td>{r.new_model_on_B[k]}</td></tr>)}</tbody></table>
-      <p className="muted small" style={{ marginTop: 8 }}>The gate is deliberately strict, so a marginal gain keeps the current model in service. This is a demo of the mechanism, not a claim about production gains.</p></div></>);
+      <p className="muted small" style={{ marginTop: 8 }}>The gate is deliberately strict, so a marginal gain keeps the current model in service. This shows the mechanism; it is not a claim about production gains.</p></div></>);
 }
 
 function PipelinePage() {
