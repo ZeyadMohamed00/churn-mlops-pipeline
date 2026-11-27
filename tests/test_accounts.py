@@ -34,3 +34,16 @@ def test_predictions_are_saved_per_account_and_guests_are_not_saved():
     assert c.get("/history").status_code in (400, 401)
     assert c.delete("/history", headers=a).status_code == 204
     assert c.get("/history", headers=a).json() == []
+
+
+def test_login_is_throttled_after_repeated_failures_and_recovers_on_success():
+    email, _ = new_user()
+    for _ in range(5):
+        assert c.post("/auth/login", json={"email": email, "password": "bad-password-1"}).status_code == 401
+    blocked = c.post("/auth/login", json={"email": email, "password": "correct-horse-1"})
+    assert blocked.status_code == 429
+    assert int(blocked.headers["retry-after"]) > 0
+    # a different account is not affected
+    other, _ = new_user()
+    ok = c.post("/auth/login", json={"email": other, "password": "correct-horse-1"})
+    assert ok.status_code == 200

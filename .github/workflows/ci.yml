@@ -8,3 +8,6 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
       - run: pip install -r requirements-train.txt && python -m churn.train && python -m churn.drift && pytest -q
+      - run: python -m churn.validate | tee validation.log
+      - uses: actions/upload-artifact@v4
+        with: {name: validation, path: reports/validation.json}

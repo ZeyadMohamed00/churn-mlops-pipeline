@@ -67,7 +67,7 @@ uvicorn churn.serve:app                         # API
 docker compose up --build                       # unverified
 ```
 
-## 5 things to understand to explain this project
+## Key concepts
 1. **Imbalanced target**: 26.5% churn, so accuracy is misleading; I report precision, recall, F1 and ROC-AUC.
 2. **Experiment tracking**: every model run logs params, metrics and latency to MLflow; the served model is a versioned folder with metadata, so you can say which model produced a prediction.
 3. **Train/serve parity**: the served numpy model is tested against the trained sklearn pipeline on the whole test set.

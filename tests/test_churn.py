@@ -70,3 +70,20 @@ def test_drift_detector_flags_shift_not_holdout():
     tr, te = split(load())
     assert drift_share(tr, te)["share_drifted"] == 0.0
     assert drift_share(tr, simulate_shift(te))["drifted_columns"] >= 3
+
+
+def test_bootstrap_ci_brackets_the_point_estimate():
+    import numpy as np
+
+    from churn.validate import bootstrap_auc_ci, expected_cost
+
+    rng = np.random.default_rng(1)
+    y = rng.integers(0, 2, 400)
+    p = np.clip(y * 0.3 + rng.random(400) * 0.7, 0, 1)
+    lo, hi = bootstrap_auc_ci(y, p, n=200)
+    from sklearn.metrics import roc_auc_score
+
+    assert lo < roc_auc_score(y, p) < hi
+    # flagging everyone costs only unneeded offers; flagging nobody costs only missed churners
+    assert expected_cost(y, p, 0.0) == int((y == 0).sum()) * 30.0
+    assert expected_cost(y, p, 1.01) == int((y == 1).sum()) * 300.0
