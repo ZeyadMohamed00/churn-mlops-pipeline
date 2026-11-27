@@ -45,9 +45,14 @@ data/telco_churn.csv -> eda.py (eda/eda_report.md, eda.png)
 
 - Latency: in-process numpy inference measured by the API at about 0.2 to 3 ms per call (live: `inference_ms` field). A full HTTPS request to the deployed function took roughly 0.15 to 0.29 s from this sandbox, dominated by network and serverless overhead. sklearn single-row predict p50/p95 for each model is in the Model tab (3 to 9 ms).
 - The three models are within about 0.002 ROC-AUC of each other. That difference is not meaningful with one split and no confidence intervals. I serve logistic regression because it is as good here, interpretable, and exports to plain numpy.
-- Recall of 0.56 means about 44% of churners are missed at threshold 0.5. A lower threshold would trade precision for recall; I did not tune it.
+- Recall of 0.56 means about 44% of churners are missed at threshold 0.5. A lower threshold would trade precision for recall; see the cost-based threshold analysis below (not applied to the deployed API).
 - Drift (Evidently): holdout vs training 0/19 columns drifted. **Simulated** shift (prices +30%, shorter tenure, more month-to-month contracts) 4/19 (21.1%) drifted, which crosses my 20% retrain threshold (my own choice; Evidently's default share is 0.5).
 - Retrain demo (`reports/retrain.json`): on simulated drift the retrained logistic regression scores ROC-AUC 0.8473 vs 0.8469 for the old one (F1 0.606 vs 0.598) on a later shifted batch, a negligible difference. **The simulated rows reuse the original labels, so this demonstrates the retraining mechanism, not a real-world gain.**
+
+## Validation beyond one split (real run: `python -m churn.validate`, CI artifact `validation`)
+- 5-fold stratified CV on the training split, ROC-AUC mean ± std: logistic regression 0.846 ± 0.013, random forest 0.845 ± 0.010, gradient boosting 0.848 ± 0.013. The spread between folds is larger than the gap between models, so the three are statistically indistinguishable here.
+- Bootstrap 95% CI for held-out ROC-AUC (1,000 resamples): logistic regression 0.842 [0.820, 0.862], random forest 0.841 [0.817, 0.862], gradient boosting 0.843 [0.821, 0.863].
+- Threshold: with **assumed** costs (missed churner 300, unneeded retention offer 30, both made up and adjustable through `COST_MISSED` and `COST_OFFER`), the threshold chosen on training cross-validation is 0.10, the lowest value in the grid, so the best value may be lower still. On the held-out set it cuts the assumed cost from 52,470 at 0.5 to 21,540. The numbers depend entirely on the assumed costs; real costs would move the threshold. The deployed API still uses 0.5.
 
 ## Honest status
 - Dataset is public (IBM sample, Apache-2.0), not private data. All drift beyond the clean holdout check is **simulated**; there is no real production traffic.
